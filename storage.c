@@ -65,7 +65,8 @@ static int inputPasswd(int x, int y) {
 	scanf("%s",inputPswrd);
 	
 	//check password
-	if (strcmp(deliverySystem[x][y].passwd,inputPswrd) == 0)
+	//입력문자가 저장된 비밀번호나 마스터비밀번호와 같으면 꺼낼수있게함  
+	if (strcmp(deliverySystem[x][y].passwd,inputPswrd) == 0||strcmp(masterPassword,inputPswrd))
 		return 0; 
 	else 
 		return -1;
@@ -77,15 +78,6 @@ static int inputPasswd(int x, int y) {
 
 // ------- API function for main.c file ---------------
 
-//backup the delivery system context to the file system
-//char* filepath : filepath and name to write
-//return : 0 - backup was successfully done, -1 - failed to backup
-int str_backupSystem(char* filepath) {
-	
-}
-
-
-#if 0
 //create delivery system on the double pointer deliverySystem
 //char* filepath : filepath and name to read config parameters (row, column, master password, past contexts of the delivery system)
 //return : 0 - successfully created, -1 - failed to create the system
@@ -97,8 +89,8 @@ int str_createSystem(char* filepath) {
 	static int deliverySystem[ROW][COLUMN] = { 0, };//택배보관함 생성  
 													// 택배보관함 초기화  
 #endif
-	int ROW;
-	int COLUMN;
+	static int ROW;
+	static int COLUMN;
 	int i; 
 	int x,y;
 	
@@ -112,9 +104,19 @@ int str_createSystem(char* filepath) {
 	//*택배보관함 생성*  
 	fscanf(fp, "%d %d", &ROW, &COLUMN);//택배보관함의 열과 행 수 받기   
 	//받은 크기를 기반으로 택배보관함 생성  
-	deliverySystem = (struct storage_t**)malloc(ROW*sizeof(struct storage_t*));
-	for(i=0;i<ROW;i++)
-		deliverySystem[i] = (struct storage_t*)malloc(COLUMN*sizeof(struct storage_t));
+	deliverySystem = ( storage_t**)malloc(ROW*sizeof( storage_t*));
+	if(deliverySystem == NULL){
+		printf("Not enough memory!\n");
+		return -1;
+	}
+	for(i=0;i<ROW;i++){
+		deliverySystem[i] = ( storage_t*)malloc(COLUMN*sizeof( storage_t));
+		if(deliverySystem == NULL){
+		printf("Not enough memory!\n");
+		return -1;
+		}
+	}
+		
 	
 	//*마스터키 받기*
 	fscanf(fp, "%s", &masterPassword[PASSWD_LEN+1]);
@@ -133,11 +135,16 @@ int str_createSystem(char* filepath) {
 	
 	return 0; 
 }
-#endif
+
 
 //free the memory of the deliverySystem 
 void str_freeSystem(void) {
+	int i;
+	static int ROW;
 	
+	for (i=0; i<ROW; i++)
+        free(deliverySystem[i]);
+    free(deliverySystem);
 }
 
 
@@ -177,17 +184,20 @@ void str_printStorageStatus(void) {
 
 //check if the input cell (x,y) is valid and whether it is occupied or not
 int str_checkStorage(int x, int y) {
-	if (x < 0 || x >= systemSize[0])//입력한 열이 음수일 경우 & 택배보관함의 사이즈보다 큰 경우  
+	//입력한 열이 음수일 경우 & 택배보관함의 사이즈보다 큰 경우
+	if (x < 0 || x >= systemSize[0])  
 	{
-		return -1;//Storage is already occupied or invalid가 출력되도록 함  
+		return -1;
+		//Storage is already occupied or invalid가 출력되도록 함  
 	}
-	
-	if (y < 0 || y >= systemSize[1])//입력한 행이 음수일 경우 & 택배보관함의 사이즈보다 큰 경우
+	//입력한 행이 음수일 경우 & 택배보관함의 사이즈보다 큰 경우
+	if (y < 0 || y >= systemSize[1])
 	{
-		return -1;//Storage is already occupied or invalid가 출력되도록 함
+		return -1;
+		//Storage is already occupied or invalid가 출력되도록 함
 	}
-	
-	return deliverySystem[x][y].cnt;	//정상적인 입력인 경우 택배 보관 여부 반환  
+	//정상적인 입력인 경우 택배 보관 여부 반환 
+	return deliverySystem[x][y].cnt;	 
 }
 
 
@@ -206,7 +216,7 @@ int str_pushToStorage(int x, int y, int nBuilding, int nRoom, char msg[MAX_MSG_S
 	//**************************************************************************************************
 	//**************************************************************************************************
 	
-	//저장후 deliverySystem[x][y].cnt=1으로 택배들어있음을 알려야함  
+	//저장후 deliverySystem[x][y].cnt=1으로 택배들어있음을 알려야함 ?
 	return 0; 
 }
 
@@ -221,16 +231,15 @@ int str_extractStorage(int x, int y) {
 	if(inputPasswd(x,y) == 0)//입력한 비번이 맞으면 내용을 출력
 	{
 		printStorageInside(x,y); 
-		//x,y의 저장되었던 정보 초기화  
-		//str_freeSystem() <- 이건아니여  
-		//free(deliverySystem[x][y])? 이런것도있나? 
+		//x,y의 저장되었던 정보 초기화   
+		//free(deliverySystem[x][y]);? 이런것도있나? 
 		
 		//택배보관함이 다시 비었음을 표시  
 		//deliverySystem[x][y].cnt=0 ?
 	}
 	else
 	{
-		printf(" -----------> password is wrong!!");
+		printf(" -----------> password is wrong!!\n");
 		
 		return -1; 
 	}
@@ -246,4 +255,45 @@ int str_findStorage(int nBuilding, int nRoom) {
 	int cnt = 0;//대충지은거임 나중에지우기 
 	
 	return cnt;
+}
+
+
+
+//backup the delivery system context to the file system
+//char* filepath : filepath and name to write
+//return : 0 - backup was successfully done, -1 - failed to backup
+int str_backupSystem(char* filepath) {
+	static int ROW;
+	static int COLUMN;
+	
+	FILE *fp = fopen("STORAGE_FILEPATH", "w");
+	
+	//백업파일을 정상적으로 열지 못했을 경우  
+	if(fp == NULL)
+		return -1;
+	
+	//백업파일을 정상적으로 열었을 경우 
+	//*택배 행수, 열수* 
+	fprintf(fp, "%d %d\n", &ROW, &COLUMN);
+	
+	//*마스터키*
+	fprintf(fp, "%s\n", &masterPassword[PASSWD_LEN+1]);
+	
+	//*저장된 택배 정보* 
+	//입력된줄을 다출력하게하면되는디.....? 어카냐  
+	while( EOF != fprintf(fp, "%i %i %d %d %s %s", &x, &y, &deliverySystem[x][y].building, &deliverySystem[x][y].room, deliverySystem[x][y].passwd, &deliverySystem[x][y].context))//저장되어있던 데이터를 반복해서 불러옴  
+	{	
+		fprintf(fp, "%i %i", &x, &y);
+		fprintf(fp, "%d %d", &deliverySystem[x][y].building, &deliverySystem[x][y].room);
+		fprintf(fp, "%s %s\n", &deliverySystem[x][y].passwd, &deliverySystem[x][y].context);  
+	}
+	
+	//파일닫기  
+	fclose( fp);
+	
+	printf("Data backup.....");
+	Sleep(500);//할리우드액숀  
+	printf("completed");
+	
+	return 0;
 }
