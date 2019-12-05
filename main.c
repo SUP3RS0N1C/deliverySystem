@@ -46,8 +46,6 @@ int buildingValidityCheck(int nBuilding, int nRoom)
 
 
 int main(int argc, char *argv[]) {
-	
-	
 	int cmd;
 	int x, y, nBuilding, nRoom;
 	char msg[MAX_MSG_SIZE+1];
@@ -197,6 +195,7 @@ int main(int argc, char *argv[]) {
 	} while (cmd != 0);
 	
 	str_freeSystem();
+	getchar(); //¡æ∑·µ«±‚¿¸ø° ∏ÿ√„  
 	
 	return 0;
 }
