@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "storage.h"
 
 #define N_BUILDING				10
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]) {
 		printf("failed to open storage config file! (%s)\n", STORAGE_FILEPATH);
 		return -1;
 	}
-	
+	printf("checkpoint line 61\n"); 
 	printf("------- Unmanned Delivery Storage System START -------\n");
 	
 	do
@@ -192,10 +193,20 @@ int main(int argc, char *argv[]) {
 		{
 			printf("[WARNING] failed to backup the delivery system!\n");
 		}
+		else
+		{
+			printf("<<Data backup.....");
+			Sleep(500);//할리우드액숀  
+			printf("completed>>\n");
+			Sleep(500);//할리우드액숀
+		} 
+		
 	} while (cmd != 0);
 	
 	str_freeSystem();
-	getchar(); //종료되기전에 멈춤  
+	
+	printf("Closing the program...");
+	//getchar(); //강종방지   
 	
 	return 0;
 }
