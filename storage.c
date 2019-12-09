@@ -22,7 +22,7 @@ typedef struct {
 	int cnt;//택배가 들었는지 여부  
 	char passwd[PASSWD_LEN+1];
 	
-	char *context;
+	char context[101];
 } storage_t;
 
 
@@ -103,7 +103,7 @@ int str_createSystem(char* filepath) {
 	//*택배보관함 생성*  
 	fscanf(fp, "%d %d\n", &systemSize[0], &systemSize[1]);//택배보관함의 열과 행 수 받기   
 	//받은 크기를 기반으로 택배보관함 생성  
-	deliverySystem = (struct storage_t**)calloc(systemSize[0],sizeof(struct storage_t*));
+	deliverySystem = ( storage_t**)calloc(systemSize[0],sizeof( storage_t*));
 	
 	if(deliverySystem == NULL)
 	{
@@ -113,13 +113,13 @@ int str_createSystem(char* filepath) {
 	
 	for(i=0;i<systemSize[0];i++)
 	{
-		deliverySystem[i] = (struct storage_t*)calloc(systemSize[1],sizeof(deliverySystem));
+		deliverySystem[i] = ( storage_t*)calloc(systemSize[1],sizeof(storage_t));
 		
 		printf("check line,  118 %d\n", &deliverySystem[3][5]);
 		
 		if(deliverySystem == NULL){
-		printf("Not enough memory!\n");
-		return -1;
+			printf("Not enough memory!\n");
+			return -1;
 		}
 	}
 	
@@ -129,38 +129,35 @@ int str_createSystem(char* filepath) {
 	
 	//*초기 저장된 택배 정보 받기* 
 	storedCnt = 0;
-	/*제대로망해서 고쳐야하는부분!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 왜 파일닫기가 안되지  
+	
 	while(1)//저장되어있던 데이터를 반복해서 불러옴  
 	{	
 		fscanf(fp, "%i %i", &x, &y);
-		printf("checkline while 1 ---- ");
 		fscanf(fp, "%d %d", &deliverySystem[x][y].building, &deliverySystem[x][y].room);
-		fscanf(fp, "%s %s", &deliverySystem[x][y].passwd, &deliverySystem[x][y].context); 
-		
-		printf("checkline while 2\n");
-		
-		if(feof(fp))break; 
-		
+		fscanf(fp, "%s ", &deliverySystem[x][y].passwd); 
+		fscanf(fp, "%s ", &deliverySystem[x][y].context); 
+				
 		deliverySystem[x][y].cnt = 1;//택배 저장됨을 표시  
 		storedCnt++;//택배갯수 
-	}*/
+		
+		if(feof(fp))break; 
+	}//*/
 	
 	for(x=0;x<systemSize[0];x++)
 	{
 		for(y=0;y<systemSize[1];y++)
 		{
-		printf("for check, line 148 --- ");
+		printf("for check, line 150 --- ");
 		printf("%i %i <address> ", x, y);
 		printf("%d %d <address reallife> \n", deliverySystem[x][y].building, deliverySystem[x][y].room);
-		//printf("%s %s <<<message>>> \n\n", deliverySystem[x][y]->passwd, deliverySystem[x][y]->context); 
+		printf("%s <<<message>>>", deliverySystem[x][y].passwd); 
+		printf("%s<<<message>>> \n\n", deliverySystem[x][y].context); 
 		//주소설정을 잘못한 듯 하다 암튼 망했네  
 		}
 	}
-	printf("for check, line 155 --- ");
 	
 	//파일닫기  
 	if(fclose(fp) != 0)
-		printf("check line 159 - file close error!");
 	
 	return 0; 
 }
@@ -242,8 +239,8 @@ int str_pushToStorage(int x, int y, int nBuilding, int nRoom, char msg[MAX_MSG_S
 	
 	deliverySystem[x][y].building = nBuilding;
 	deliverySystem[x][y].room = nRoom;
-	//deliverySystem[x][y].context = msg[MAX_MSG_SIZE+1];//여기다시봐야함 대충 글쿤으로짰음  
-	//deliverySystem[x][y].passwd = passwd[PASSWD_LEN+1];//여기다시봐야함 대충 글쿤으로짰음  
+	*deliverySystem[x][y].context = msg[MAX_MSG_SIZE+1];//여기다시봐야함 대충 글쿤으로짰음  
+	*deliverySystem[x][y].passwd = passwd[PASSWD_LEN+1];//여기다시봐야함 대충 글쿤으로짰음  
 	
 	msg[0] = '\0'; //메세지변수 초기화? 
 	
@@ -270,7 +267,7 @@ int str_extractStorage(int x, int y) {
 		
 		//택배보관함이 다시 비었음을 표시  
 		deliverySystem[x][y].cnt=0;
-		storedCnt--;
+		storedCnt--;	
 	}
 	else
 	{
@@ -348,6 +345,11 @@ int str_backupSystem(char* filepath) {
 	
 	//파일닫기  
 	fclose( fp);
+	
+	printf("<<Data backup.....");
+	Sleep(500);//할리우드액숀  
+	printf("completed>>\n");
+	Sleep(500);//할리우드액숀
 	
 	return 0;
 }

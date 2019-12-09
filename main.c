@@ -193,13 +193,6 @@ int main(int argc, char *argv[]) {
 		{
 			printf("[WARNING] failed to backup the delivery system!\n");
 		}
-		else
-		{
-			printf("<<Data backup.....");
-			Sleep(500);//할리우드액숀  
-			printf("completed>>\n");
-			Sleep(500);//할리우드액숀
-		} 
 		
 	} while (cmd != 0);
 	
