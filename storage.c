@@ -22,7 +22,7 @@ typedef struct {
 	int cnt;//택배가 들었는지 여부  
 	char passwd[PASSWD_LEN+1];
 	
-	char context[101];
+	char *context;
 } storage_t;
 
 
@@ -42,7 +42,7 @@ static void printStorageInside(int x, int y) {
 	printf("\n------------------------------------------------------------------------\n");
 	printf("------------------------------------------------------------------------\n");
 	if (deliverySystem[x][y].cnt > 0)
-		printf("<<<<<<<<<<<<<<<<<<<<<<<< : %s >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", deliverySystem[x][y].context);
+		printf("<<<<<<<<<<<<<<<<<<<<<<<< : %s >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", &deliverySystem[x][y].context);
 	else
 		printf("<<<<<<<<<<<<<<<<<<<<<<<< empty >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 		
@@ -92,8 +92,7 @@ int str_createSystem(char* filepath) {
 	int x,y;
 	int inProceed;
 	
-	FILE *fp = fopen("storage.txt", "r");    // storage.txt 파일을 읽기 모드로 열기
-	//근데 매크로가 안열린다...? 이름 똑같은데  
+	FILE *fp = fopen(STORAGE_FILEPATH, "r");    // storage.txt 파일을 읽기 모드로 열기 
 	
 	//백업파일을 찾지 못했을 경우  
 	if(fp == NULL)
@@ -115,7 +114,7 @@ int str_createSystem(char* filepath) {
 	{
 		deliverySystem[i] = ( storage_t*)calloc(systemSize[1],sizeof(storage_t));
 		
-		printf("check line,  118 %d\n", &deliverySystem[3][5]);
+		printf("check line,  118 %d %d\n", &deliverySystem[3][5],systemSize[0]);
 		
 		if(deliverySystem == NULL){
 			printf("Not enough memory!\n");
@@ -141,19 +140,6 @@ int str_createSystem(char* filepath) {
 		storedCnt++;//택배갯수 
 		
 		if(feof(fp))break; 
-	}//*/
-	
-	for(x=0;x<systemSize[0];x++)
-	{
-		for(y=0;y<systemSize[1];y++)
-		{
-		printf("for check, line 150 --- ");
-		printf("%i %i <address> ", x, y);
-		printf("%d %d <address reallife> \n", deliverySystem[x][y].building, deliverySystem[x][y].room);
-		printf("%s <<<message>>>", deliverySystem[x][y].passwd); 
-		printf("%s<<<message>>> \n\n", deliverySystem[x][y].context); 
-		//주소설정을 잘못한 듯 하다 암튼 망했네  
-		}
 	}
 	
 	//파일닫기  
@@ -239,9 +225,11 @@ int str_pushToStorage(int x, int y, int nBuilding, int nRoom, char msg[MAX_MSG_S
 	
 	deliverySystem[x][y].building = nBuilding;
 	deliverySystem[x][y].room = nRoom;
-	*deliverySystem[x][y].context = msg[MAX_MSG_SIZE+1];//여기다시봐야함 대충 글쿤으로짰음  
-	*deliverySystem[x][y].passwd = passwd[PASSWD_LEN+1];//여기다시봐야함 대충 글쿤으로짰음  
-	
+	*deliverySystem[x][y].passwd = passwd[PASSWD_LEN+1];
+	printf("check line 228\n");	
+	deliverySystem[x][y].context = msg[MAX_MSG_SIZE+1];//여기다시봐야함 대충 글쿤으로짰음  
+
+	printf("check line 230\n");
 	msg[0] = '\0'; //메세지변수 초기화? 
 	
 	deliverySystem[x][y].cnt=1;
@@ -293,7 +281,7 @@ int str_findStorage(int nBuilding, int nRoom) {
 		{
 			if( deliverySystem[i][j].building == nBuilding&&deliverySystem[i][j].room == nRoom) 
 			{	
-				printf("-----------> Found a package in (%i, %i)", &i, &j);
+				printf("-----------> Found a package in (%d, %d)\n", i, j);
 				
 				cnt++;
 			}
@@ -311,7 +299,7 @@ int str_findStorage(int nBuilding, int nRoom) {
 int str_backupSystem(char* filepath) {
 	int i,j;
 	
-	FILE *fp = fopen("STORAGE_FILEPATH", "w");
+	FILE *fp = fopen(STORAGE_FILEPATH, "w+");
 	
 	if (fp == NULL) 
 	{
@@ -322,10 +310,10 @@ int str_backupSystem(char* filepath) {
 	
 	//백업파일을 정상적으로 열었을 경우 
 	//*택배 행수, 열수* 
-	fprintf(fp, "%d %d\n", &systemSize[0], &systemSize[1]);
+	fprintf(fp, "%d %d\n", systemSize[0], systemSize[1]);
 	
 	//*마스터키*
-	fprintf(fp, "%s\n", &masterPassword[PASSWD_LEN+1]);
+	fprintf(fp, "%s\n", masterPassword);
 	
 	//*저장된 택배 정보* 
 	//입력된줄을 다출력하게하면되는디.....? 어카냐  
@@ -336,8 +324,8 @@ int str_backupSystem(char* filepath) {
 		{
 			if( deliverySystem[i][j].cnt == 1) 
 			{	
-				fprintf(fp, "%i %i", &i, &j);
-				fprintf(fp, "%d %d", &deliverySystem[i][j].building, &deliverySystem[i][j].room);
+				fprintf(fp, "%i %i ", i, j);
+				fprintf(fp, "%d %d ", deliverySystem[i][j].building, deliverySystem[i][j].room);
 				fprintf(fp, "%s %s\n", &deliverySystem[i][j].passwd, &deliverySystem[i][j].context);  
 			}
 		}
@@ -346,7 +334,7 @@ int str_backupSystem(char* filepath) {
 	//파일닫기  
 	fclose( fp);
 	
-	printf("<<Data backup.....");
+	printf("\n<<Data backup.....");
 	Sleep(500);//할리우드액숀  
 	printf("completed>>\n");
 	Sleep(500);//할리우드액숀
