@@ -199,7 +199,6 @@ int main(int argc, char *argv[]) {
 	str_freeSystem();
 	
 	printf("Closing the program...");
-	//getchar(); //강종방지   
 	
 	return 0;
 }

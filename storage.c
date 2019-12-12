@@ -42,7 +42,7 @@ static void printStorageInside(int x, int y) {
 	printf("\n------------------------------------------------------------------------\n");
 	printf("------------------------------------------------------------------------\n");
 	if (deliverySystem[x][y].cnt > 0)//택배가 들어있다면  
-		printf("<<<<<<<<<<<<<<<<<<<<<<<< : %s >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", &deliverySystem[x][y].context);//내용을 출력  
+		printf("<<<<<<<<<<<<<<<<<<<<<<<< : %s >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", deliverySystem[x][y].context);//내용을 출력  
 	else
 		printf("<<<<<<<<<<<<<<<<<<<<<<<< empty >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 		
@@ -86,10 +86,9 @@ static int inputPasswd(int x, int y) {
 //char* filepath : filepath and name to read config parameters (row, column, master password, past contexts of the delivery system)
 //return : 0 - successfully created, -1 - failed to create the system
 int str_createSystem(char* filepath) {
-
-	int i; 
-	int x,y;
-	int inProceed;
+	
+	int i; //for문 돌리기 위함  
+	int x,y; //택배보관함의 열과 행  
 	
 	FILE *fp = fopen(STORAGE_FILEPATH, "r");    // storage.txt 파일을 읽기 모드로 열기 
 	
@@ -100,9 +99,9 @@ int str_createSystem(char* filepath) {
 	//백업파일을 정상적으로 찾았을 경우 
 	//*택배보관함 생성*  
 	fscanf(fp, "%d %d\n", &systemSize[0], &systemSize[1]);//택배보관함의 열과 행 수 받기   
-	//받은 크기를 기반으로 택배보관함 생성  
+	//받은 크기를 기반으로 택배보관함 생성(동적할당) 
 	deliverySystem = ( storage_t**)calloc(systemSize[0],sizeof( storage_t*));//열 생성  
-	//(메모리가 부족해) 생성이 되지 않은 경우  
+	//(메모리가 부족해) 동적메모리 할당이 되지 않은 경우  
 	if(deliverySystem == NULL)
 	{
 		printf("Not enough memory!\n");
@@ -112,7 +111,7 @@ int str_createSystem(char* filepath) {
 	for(i=0;i<systemSize[0];i++)
 	{
 		deliverySystem[i] = ( storage_t*)calloc(systemSize[1],sizeof(storage_t));//행 생성  
-		//(메모리가 부족해) 생성이 되지 않은 경우  
+		//(메모리가 부족해) 동적메모리 할당이 되지 않은 경우  
 		if(deliverySystem == NULL){
 			printf("Not enough memory!\n");
 			return -1;
