@@ -19,10 +19,10 @@
 typedef struct {
 	int building;//동 수 (1~10)  
 	int room;//호수 ex)308  
-	int cnt;//택배가 들었는지 여부  
-	char passwd[PASSWD_LEN+1];//비밀번호 저장  
+	int cnt;//보관함에 택배가 들어 있는지 여부  
+	char passwd[PASSWD_LEN+1];//비밀번호  
 	
-	char *context;//메세지 저장 
+	char *context;//메세지
 } storage_t;
 
 
@@ -43,8 +43,8 @@ static void printStorageInside(int x, int y) {
 	printf("------------------------------------------------------------------------\n");
 	if (deliverySystem[x][y].cnt > 0)//택배가 들어있다면  
 		printf("<<<<<<<<<<<<<<<<<<<<<<<< : %s >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", deliverySystem[x][y].context);//내용을 출력  
-	else
-		printf("<<<<<<<<<<<<<<<<<<<<<<<< empty >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+	else//택배가 들어있지 않을 경우  
+		printf("<<<<<<<<<<<<<<<<<<<<<<<< empty >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");//비어있다고 출력  
 		
 	printf("------------------------------------------------------------------------\n");
 	printf("------------------------------------------------------------------------\n\n");
@@ -55,7 +55,7 @@ static void printStorageInside(int x, int y) {
 //and allocate memory to the context pointer
 //int x, int y : cell coordinate to be initialized
 static void initStorage(int x, int y) {
-	memset(&deliverySystem[x][y], 0, sizeof( storage_t));//(x,y)의 structure 초기화  
+	memset(&deliverySystem[x][y], 0, sizeof( storage_t));//(x,y)칸의 택배보관함 structure를 초기화  
 	
 	return;  
 }
@@ -64,14 +64,14 @@ static void initStorage(int x, int y) {
 //int x, int y : cell for password check
 //return : 0 - password is matching, -1 - password is not matching
 static int inputPasswd(int x, int y) {
-	char inputPswrd[PASSWD_LEN+1];
+	char inputPswrd[PASSWD_LEN+1];//입력받은 비밀번호를 저장할 배열  
 	
 	//비밀번호 입력받기  
 	printf(" - input password for (%d, %d) storage : ", x,y);
 	scanf("%s",inputPswrd);
 	
 	//check password
-	//입력문자가 저장된 비밀번호나 마스터비밀번호와 같으면 0반환 아닐시 -1 빈환  
+	//입력문자가 해당 칸에 지정된 비밀번호나 마스터비밀번호와 같으면 0, 아닐시 -1 빈환  
 	if (strcmp(deliverySystem[x][y].passwd,inputPswrd) == 0||strcmp(masterPassword,inputPswrd) == 0)
 		return 0; 
 	else 
@@ -87,55 +87,57 @@ static int inputPasswd(int x, int y) {
 //return : 0 - successfully created, -1 - failed to create the system
 int str_createSystem(char* filepath) {
 	
-	int i; //for문 돌리기 위함  
-	int x,y; //택배보관함의 열과 행  
+	int i; //for문을 돌리기 위한 변수 
+	int x,y; //택배보관함의 행과 열   
 	
 	FILE *fp = fopen(STORAGE_FILEPATH, "r");    // storage.txt 파일을 읽기 모드로 열기 
 	
-	//백업파일을 찾지 못했을 경우  
+	//백업파일을 찾지 못했을 경우 
+	//*방어코드 작동* 
 	if(fp == NULL)
-		return -1;
+		return -1;//-1 반환으로 오류났음을 알 수 있게 함  
 	
 	//백업파일을 정상적으로 찾았을 경우 
 	//*택배보관함 생성*  
-	fscanf(fp, "%d %d\n", &systemSize[0], &systemSize[1]);//택배보관함의 열과 행 수 받기   
+	fscanf(fp, "%d %d\n", &systemSize[0], &systemSize[1]);//백업파일에 저정되었던 택배보관함의 행과 열 수 받아오기  
 	//받은 크기를 기반으로 택배보관함 생성(동적할당) 
-	deliverySystem = ( storage_t**)calloc(systemSize[0],sizeof( storage_t*));//열 생성  
+	deliverySystem = ( storage_t**)calloc(systemSize[0],sizeof( storage_t*));//받아온 수 만큼 행 생성  
 	//(메모리가 부족해) 동적메모리 할당이 되지 않은 경우  
 	if(deliverySystem == NULL)
-	{
+	{	//메모리가 부족하다고 출력  & -1 반환  
 		printf("Not enough memory!\n");
 		return -1;
 	}
 	
-	for(i=0;i<systemSize[0];i++)
+	for(i=0;i<systemSize[0];i++)//각 행마다 반복해서 열 생성  
 	{
-		deliverySystem[i] = ( storage_t*)calloc(systemSize[1],sizeof(storage_t));//행 생성  
+		deliverySystem[i] = ( storage_t*)calloc(systemSize[1],sizeof(storage_t));//받아온 수 만큼 열 생성  
 		//(메모리가 부족해) 동적메모리 할당이 되지 않은 경우  
-		if(deliverySystem == NULL){
+		if(deliverySystem == NULL)
+		{	//메모리가 부족하다고 출력 & -1 반환  
 			printf("Not enough memory!\n");
 			return -1;
 		}
 	}
 	
 	
-	//*마스터키 받기*
+	//*마스터키 받아오기*
 	fscanf(fp, "%s", masterPassword);
 	
-	//*초기 저장된 택배 정보 받기* 
+	//*초기 저장된 택배 정보 받아오기* 
 	storedCnt = 0;
 	
 	while(1)//저장되어있던 데이터를 반복해서 불러옴  
 	{	
-		fscanf(fp, "%i %i", &x, &y);
-		fscanf(fp, "%d %d", &deliverySystem[x][y].building, &deliverySystem[x][y].room);
-		fscanf(fp, "%s ", &deliverySystem[x][y].passwd); 
-		fscanf(fp, "%s ", &deliverySystem[x][y].context); 
+		fscanf(fp, "%i %i", &x, &y);//택배보관함의 행과 열  
+		fscanf(fp, "%d %d", &deliverySystem[x][y].building, &deliverySystem[x][y].room);//해당 보관함의 택배를 받을 동과 호수  
+		fscanf(fp, "%s ", &deliverySystem[x][y].passwd);//해당 보관함에 지정된 비밀번호  
+		fscanf(fp, "%s ", &deliverySystem[x][y].context);//해당 보관함에 저장된 택배 내용  
 				
-		deliverySystem[x][y].cnt = 1;//택배 저장됨을 표시  
-		storedCnt++;//택배갯수 
+		deliverySystem[x][y].cnt = 1;//cnt에 1을 할당해 해당 보관함에 택배가 들어있음을 표시  
+		storedCnt++;//전체 보관함에서 택배의 총 갯수 
 		
-		if(feof(fp))break; 
+		if(feof(fp))break; //백업파일이 끝난 경우 while문을 나간다(택배데이터 불러오기를 끝냄)  
 	}
 	
 	//파일닫기  
@@ -147,10 +149,10 @@ int str_createSystem(char* filepath) {
 
 //free the memory of the deliverySystem 
 void str_freeSystem(void) {
-	int i;
-	static int systemSize[0];
+	int i;//for문을 돌리기위함  
+	static int systemSize[0];//동적할당 해제를 위해 static으로 이전에 선언된 택배보관함 크기 변수 사용  
 	
-	//메모리풀기  
+	//동적할당 메모리풀기  
 	for (i=0; i<systemSize[0]; i++)
         free(deliverySystem[i]);
     free(deliverySystem);
@@ -174,13 +176,13 @@ void str_printStorageStatus(void) {
 	{
 		printf("%i|\t",i);
 		for (j=0;j<systemSize[1];j++)
-		{
+		{	//택배가 저장되어 있는 경우  
 			if (deliverySystem[i][j].cnt > 0)
-			{
+			{	//택배의 수신인의 동과 호수 표시  
 				printf("%i,%i\t|\t", deliverySystem[i][j].building, deliverySystem[i][j].room);
 			}
-			else
-			{
+			else//택배가 저장되어 있지 않은 경우  
+			{	//저장된 택배가 없음(-)을 표시  
 				printf("  -  \t|\t");
 			}
 		}
@@ -195,15 +197,13 @@ void str_printStorageStatus(void) {
 int str_checkStorage(int x, int y) {
 	//입력한 열이 음수일 경우 & 택배보관함의 사이즈보다 큰 경우
 	if (x < 0 || x >= systemSize[0])  
-	{
-		return -1;
-		//Storage is already occupied or invalid가 출력되도록 함  
+	{	//Storage is already occupied or invalid가 출력되도록 -1을 반환  
+		return -1;  
 	}
 	//입력한 행이 음수일 경우 & 택배보관함의 사이즈보다 큰 경우
 	if (y < 0 || y >= systemSize[1])
-	{
+	{	//Storage is already occupied or invalid가 출력되도록 -1을 반환  
 		return -1;
-		//Storage is already occupied or invalid가 출력되도록 함
 	}
 	//정상적인 입력인 경우 택배가 차있는지 여부 반환 
 	return deliverySystem[x][y].cnt;	 
@@ -218,16 +218,17 @@ int str_checkStorage(int x, int y) {
 //char passwd[] : password string (4 characters)
 //return : 0 - successfully put the package, -1 - failed to put
 int str_pushToStorage(int x, int y, int nBuilding, int nRoom, char msg[MAX_MSG_SIZE+1], char passwd[PASSWD_LEN+1]) {
-	//입력받은 내용을 (x,y)에 해당하는 structure에 저장  
-	deliverySystem[x][y].building = nBuilding;
-	deliverySystem[x][y].room = nRoom;
-	strcpy(deliverySystem[x][y].passwd, passwd);
-	deliverySystem[x][y].context = (char*)malloc(strlen(msg) + 1);//여기랑  
-	strcpy(deliverySystem[x][y].context, msg);//여기가문제인거같음  checkline
-	//택배가 저장되었음을 표시  
-	deliverySystem[x][y].cnt=1;
-	//총 저장된 택배 수를 하나 더함  
-	storedCnt++;
+	//입력받은 내용을 (x,y)보관함에 해당하는 structure에 저장  
+	deliverySystem[x][y].building = nBuilding;//동 수  
+	deliverySystem[x][y].room = nRoom;//호수  
+	
+	strcpy(deliverySystem[x][y].passwd, passwd);//해당 보관함에 지정한 비밀번호  
+	
+	deliverySystem[x][y].context = (char*)malloc(strlen(msg) + 1);//메세지 내용을 저장하기 위해 메세지 크기만큼을 동적할당  
+	strcpy(deliverySystem[x][y].context, msg);//msg를 통해 받아온 저장될 택배 내용을 context에 복사  
+	
+	deliverySystem[x][y].cnt=1;//택배가 저장되었음을 표시  
+	storedCnt++;//전체 택배보관함에 총 저장된 택배 수에 하나를 더함  
 	
 	return 0; 
 }
@@ -246,17 +247,17 @@ int str_extractStorage(int x, int y) {
 		
 		//(x,y)에 저장되었던 정보 초기화   
 		initStorage(x,y);
-		//(x,y)에 저장된 텍스트를 저장하기 위해 할당했던 동적메모리 초기화  
+		//(x,y)의 메세지(택배)를 저장하기 위해 할당했던 동적할당 풀기  
 		free(deliverySystem[x][y].context);
 		
-		//해당 택배보관함이 다시 비었음을 표시  
+		//해당 택배보관함이 다시 비었음을 표시하기 위해 cnt에 0 할당  
 		deliverySystem[x][y].cnt=0;
-		//총택배갯수 감소  
+		//전체 보관함에 저장된 총 택배 갯수 감소  
 		storedCnt--;	
 	}
 	//비밀번호가 틀렸을 경우
 	else
-	{	//틀렸음을 출력  
+	{	//비밀번호가 틀렸음을 출력  
 		printf(" -----------> password is wrong!!\n");
 		
 		return -1; 
@@ -276,16 +277,16 @@ int str_findStorage(int nBuilding, int nRoom) {
 	for(i=0;i<systemSize[0];i++)
 	{
 		for(j=0;j<systemSize[1];j++)
-		{	//입력한 동수와 호수가 모두 일치하는 (x,y)가 있으면 택배가 존재한다는것을 출력  
+		{	//입력한 동,호수에 거주하는 사람에게 온 택배가 있으면 있는 만큼 해당 택배의 위치 출력   
 			if( deliverySystem[i][j].building == nBuilding&&deliverySystem[i][j].room == nRoom) 
-			{	//택배가 있음을 출력  
+			{	
 				printf("-----------> Found a package in (%d, %d)\n", i, j);
-				//입력한 동수와 호수가 찾을 수 있는 택배 개수를 카운트  
+				//입력한 동,호수의 거주하는 사람이 찾아갈 수 있는 택배 갯수   
 				cnt++;
 			}
 		}
 	} 
-	
+	//입력한 동 , 호수에 사는 사람 앞으로 보관된 택배의 개수를 반환  
 	return cnt;
 }
 
@@ -298,32 +299,30 @@ int str_backupSystem(char* filepath) {
 	int i,j;
 	//백업파일열기  
 	FILE *fp = fopen(STORAGE_FILEPATH, "w+");
-	//백업파일을 여는데 실패했을 경우 방어코드  
+	
+	//백업파일을 여는데 실패했을 경우
+	//*방어코드  작동* 
 	if (fp == NULL) 
-	{
-	    printf("Backup error ! \n");
-	    
-	    return -1;
-	}
+	   return -1;//-1 반환으로 오류발생했음을 알 수 있게 함  
 	
 	//백업파일을 정상적으로 열었을 경우 
-	//*택배 행수, 열수* 
+	//*택배 행수, 열수 백업* 
 	fprintf(fp, "%d %d\n", systemSize[0], systemSize[1]);
 	
-	//*마스터키*
+	//*마스터키 백업*
 	fprintf(fp, "%s\n", masterPassword);
 	
-	//*저장된 택배 정보* 
-	//택배가 저장되어 있는 칸은 텍스트로 내용이 출력되도록 함  
+	//*저장된 택배 정보 백업* 
+	//택배가 저장되어 있으면 해당 정보가 텍스트로 출력되도록 함  
 	for(i=0;i<systemSize[0];i++)
 	{
 		for(j=0;j<systemSize[1];j++)
 		{	//택배가 들어있을 경우  
 			if( deliverySystem[i][j].cnt == 1) 
 			{	//저장된 내용 텍스트로 내보내기  
-				fprintf(fp, "%i %i ", i, j);
-				fprintf(fp, "%d %d ", deliverySystem[i][j].building, deliverySystem[i][j].room);
-				fprintf(fp, "%s %s\n", &deliverySystem[i][j].passwd, &deliverySystem[i][j].context);  
+				fprintf(fp, "%i %i ", i, j);//보관된 보관함의 행과 열 수  
+				fprintf(fp, "%d %d ", deliverySystem[i][j].building, deliverySystem[i][j].room);//택배 수신인의 동과 호수  
+				fprintf(fp, "%s %s\n", &deliverySystem[i][j].passwd, &deliverySystem[i][j].context); //보관함 비밀번호와 저장된 메세지(택배)  
 			}
 		}
 	}
@@ -341,7 +340,7 @@ int str_backupSystem(char* filepath) {
 	Sleep(100);//할리우드액숀 
 	printf(".");
 	Sleep(300);//할리우드액숀 
-	printf("completed>>\n");
+	printf("completed>>\n");//백업 완료  
 	
 	return 0;
 }
